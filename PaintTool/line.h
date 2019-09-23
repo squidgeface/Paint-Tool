@@ -31,6 +31,7 @@ public:
 
 	virtual void Draw(HDC _hdc);
 	void SetWidth(int _iNewWidth);
+	void SetStyle(int _iNewStyle);
 	
 
 private:

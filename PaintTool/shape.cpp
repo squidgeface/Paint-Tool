@@ -30,3 +30,8 @@ void IShape::SetEndY(int _iEndY)
 {
 	m_iEndY = _iEndY;
 }
+
+void IShape::SetColor(COLORREF _newColor)
+{
+	m_ColorRef = _newColor;
+}

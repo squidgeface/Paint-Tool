@@ -66,6 +66,12 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 	static int s_iMouseX = 0;
 	static int s_iMouseY = 0;
 	static bool s_mIsDown = false;
+	static COLORREF s_lineColour = RGB(0, 0, 0);
+	static int s_lineWidth = 5;
+	static int s_lineStyle = PS_SOLID;
+	static  COLORREF s_fillColour = RGB(255, 255, 255);
+	static EBRUSHSTYLE s_brushStyle = SOLID;
+	static int s_hatchStyle;
 	
 	switch (_msg)
 	{
@@ -107,21 +113,11 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 
 		switch (s_currentShape)
 		{
-		case FREEHAND:
-		{
-
-			g_pShape = new CBrush();
-			g_pShape->SetStartX(s_iMouseX);
-			g_pShape->SetStartY(s_iMouseY);
-			g_pShape->SetEndX(s_iMouseX);
-			g_pShape->SetEndY(s_iMouseY);
-			g_pCanvas->AddShape(g_pShape);
-			break;
-		}
+		
 		case LINESHAPE:
 		{
 
-			g_pShape = new CLine();
+			g_pShape = new CLine(s_lineStyle, s_lineWidth, s_lineColour, s_iMouseX, s_iMouseY);
 			g_pShape->SetStartX(s_iMouseX);
 			g_pShape->SetStartY(s_iMouseY);
 			g_pShape->SetEndX(s_iMouseX);
@@ -132,7 +128,7 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 		case RECTANGLESHAPE:
 		{
 
-			g_pShape = new CRectangle();
+			g_pShape = new CRectangle(s_brushStyle, s_hatchStyle, s_fillColour, s_lineStyle, s_lineColour, s_iMouseX, s_iMouseY);
 			g_pShape->SetStartX(s_iMouseX);
 			g_pShape->SetStartY(s_iMouseY);
 			g_pShape->SetEndX(s_iMouseX);
@@ -194,7 +190,8 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 			{
 				// Do something...
 			}
-		
+			
+			UpdateWindow(_hwnd);
 	}
 	break;
 
@@ -226,7 +223,7 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 			//Shape Menu
 			case ID_SHAPE_LINE:
 			{
-				//g_pShape = new CLine(PS_SOLID, 1, BLACK_PEN,);
+				
 				s_currentShape = LINESHAPE;
 				break;
 			}
@@ -252,43 +249,43 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 			//Pen menu
 			case ID_WIDTH_THIN:
 			{
-			
+				s_lineWidth = 1;
 				break;
 			}
 
 			case ID_WIDTH_MEDIUM:
 			{
-
+				s_lineWidth = 5;
 				break;
 			}
 
 
 			case ID_WIDTH_THICK:
 			{
-
+				s_lineWidth = 10;
 				break;
 			}
 
-
+			//Pen Colours
 			case ID_COLOR_RED:
 			{
-
+				s_lineColour = RGB(255,0,0);
 				break;
 			}
 
 			case ID_COLOR_BLUE:
 			{
-
+				s_lineColour = RGB(0, 0, 255);
 				break;
 			}
 			case ID_COLOR_GREEN:
 			{
-
+				s_lineColour = RGB(0, 127, 0);
 				break;
 			}
 			case ID_COLOR_YELLOW:
 			{
-
+				s_lineColour = RGB(255, 255, 0);
 				break;
 			}
 			case ID_COLOR_CUSTOM:
@@ -299,32 +296,66 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 
 			case ID_STYLE_SOLID:
 			{
-
+				s_lineStyle = PS_SOLID;
 				break;
 			}
 
 			case ID_STYLE_STIPED:
 			{
-
+				s_lineStyle = PS_DASH;
 				break;
 			}
 
 			case ID_STYLE_CROSSHATCH:
 			{
-
+				s_lineStyle = PS_DASHDOT;
 				break;
 			}
 
-			//Brush Menu
-			case ID_BRUSH_COLOR:
+			//Brush colours
+		
+			case ID_COLOR_RED40025:
+			{
+				s_fillColour = RGB(255, 0, 0);
+				break;
+			}
+
+			case ID_COLOR_BLUE40026:
+			{
+				s_fillColour = RGB(0, 0, 255);
+				break;
+			}
+			case ID_COLOR_GREEN40027:
+			{
+				s_fillColour = RGB(0, 127, 0);
+				break;
+			}
+			case ID_COLOR_YELLOW40028:
+			{
+				s_fillColour = RGB(255, 255, 0);
+				break;
+			}
+			case ID_COLOR_CUSTOM40029:
 			{
 
 				break;
 			}
-
-			case ID_BRUSH_STYLE:
+			//Brush Style
+			case ID_STYLE_SOLID40036:
 			{
+				s_brushStyle = SOLID;
+				break;
+			}
 
+			case ID_STYLE_DASH:
+			{
+				s_brushStyle = HATCH;
+				break;
+			}
+
+			case 40039:
+			{
+				s_brushStyle = NOSTYLE;
 				break;
 			}
 		

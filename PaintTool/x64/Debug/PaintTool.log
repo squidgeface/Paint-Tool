@@ -1,11 +1,2 @@
-﻿  backBuffer.cpp
-  brush.cpp
-  canvas.cpp
-  ellipse.cpp
-  line.cpp
-  main.cpp
-  polygon.cpp
-  rectangle.cpp
-  shape.cpp
-  Generating Code...
-  PaintTool.vcxproj -> E:\School\Semester 2\GD1P03 - 2D Game Prg\Summatives\Mini Project\x64\Debug\PaintTool.exe
+﻿  main.cpp
+  PaintTool.vcxproj -> H:\Semester 2\GD1P03 - 2D Game Prg\Summative\Paint-Tool\x64\Debug\PaintTool.exe
