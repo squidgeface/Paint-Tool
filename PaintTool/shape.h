@@ -20,6 +20,13 @@
 #include <windows.h>
 #include <windowsx.h>
 
+enum EBRUSHSTYLE
+{
+	NOSTYLE = -1,
+	SOLID,
+	HATCH
+};
+
 class IShape
 {
 public:

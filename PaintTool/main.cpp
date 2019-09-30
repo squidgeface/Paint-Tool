@@ -62,7 +62,7 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 	// This is the main message handler of the system.
 	PAINTSTRUCT ps; // Used in WM_PAINT.
 	HDC hdc;        // Handle to a device context.
-	static ESHAPE s_currentShape = FREEHAND;
+	static ESHAPE s_currentShape = LINESHAPE;
 	static int s_iMouseX = 0;
 	static int s_iMouseY = 0;
 	static bool s_mIsDown = false;
@@ -71,7 +71,16 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 	static int s_lineStyle = PS_SOLID;
 	static  COLORREF s_fillColour = RGB(255, 255, 255);
 	static EBRUSHSTYLE s_brushStyle = SOLID;
-	static int s_hatchStyle;
+	static int s_hatchStyle = HS_DIAGCROSS;
+	static int firstBrush = 0;
+	static CHOOSECOLOR cc;
+	static CPolygon* ppointer = NULL;
+	static POINT pmouse;
+	
+	
+	
+	
+
 	
 	switch (_msg)
 	{
@@ -79,6 +88,14 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 	{
 		// Do initialization stuff here.
 		g_pCanvas = new CCanvas();
+
+		//Start with default objects checked
+		CheckMenuItem(g_hMenu, ID_COLOR_BLACK, MF_CHECKED);
+		CheckMenuItem(g_hMenu, ID_SHAPE_LINE, MF_CHECKED);
+		CheckMenuItem(g_hMenu, ID_WIDTH_MEDIUM, MF_CHECKED);
+		CheckMenuItem(g_hMenu, ID_STYLE_SOLID, MF_CHECKED);
+		CheckMenuItem(g_hMenu, ID_COLOR_WHITE, MF_CHECKED);
+		CheckMenuItem(g_hMenu, ID_STYLE_SOLID40036, MF_CHECKED);
 
 		// Return Success.
 		return (0);
@@ -99,9 +116,21 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 	}
 	break;
 
+	
+	case WM_RBUTTONDOWN:
+	{
+		if (s_currentShape == POLYGONSHAPE) {
+			g_pShape = NULL;
+			ppointer = NULL;
+			}
+		
+	}
+	break;
+	
 	case WM_LBUTTONUP:
 	{
-		s_mIsDown = false;
+		
+		
 	}
 	break;
 
@@ -109,7 +138,7 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 	{
 		s_iMouseX = static_cast<int>(LOWORD(_lparam));
 		s_iMouseY = static_cast<int>(HIWORD(_lparam));
-		s_mIsDown = true;
+		
 
 		switch (s_currentShape)
 		{
@@ -128,7 +157,7 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 		case RECTANGLESHAPE:
 		{
 
-			g_pShape = new CRectangle(s_brushStyle, s_hatchStyle, s_fillColour, s_lineStyle, s_lineColour, s_iMouseX, s_iMouseY);
+			g_pShape = new CRectangle(s_brushStyle, s_hatchStyle, s_fillColour, s_lineStyle, s_lineColour, s_lineWidth, s_iMouseX, s_iMouseY);
 			g_pShape->SetStartX(s_iMouseX);
 			g_pShape->SetStartY(s_iMouseY);
 			g_pShape->SetEndX(s_iMouseX);
@@ -139,7 +168,7 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 		case ELLIPSESHAPE:
 		{
 
-			g_pShape = new CEllipse();
+			g_pShape = new CEllipse(s_brushStyle, s_hatchStyle, s_fillColour, s_lineStyle, s_lineColour, s_lineWidth, s_iMouseX, s_iMouseY);
 			g_pShape->SetStartX(s_iMouseX);
 			g_pShape->SetStartY(s_iMouseY);
 			g_pShape->SetEndX(s_iMouseX);
@@ -149,8 +178,30 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 		}
 		case POLYGONSHAPE:
 		{
+			if (g_pShape == NULL && ppointer == NULL) 
+			{
+				g_pShape = new CPolygon(s_brushStyle, s_hatchStyle, s_fillColour, s_lineStyle, s_lineColour, s_lineWidth);
+				ppointer = static_cast<CPolygon*>(g_pShape);
+				ppointer->AddPoint(pmouse);
+				g_pCanvas->AddShape(g_pShape);
+			}
+			else 
+			{
+				ppointer->AddPoint(pmouse);
+			}
+						
+			g_pShape->SetStartX(s_iMouseX);
+			g_pShape->SetStartY(s_iMouseY);
+			g_pShape->SetEndX(s_iMouseX);
+			g_pShape->SetEndY(s_iMouseY);
 
-			g_pShape = new CPolygon();
+			
+			break;
+		}
+		case STAMP:
+		{
+
+			g_pShape = new CStamp(g_hInstance, IDB_BITMAP1);
 			g_pShape->SetStartX(s_iMouseX);
 			g_pShape->SetStartY(s_iMouseY);
 			g_pShape->SetEndX(s_iMouseX);
@@ -158,10 +209,13 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 			g_pCanvas->AddShape(g_pShape);
 			break;
 		}
+
 		default:
 			break;
 		}
 
+		InvalidateRect(_hwnd, NULL, true);
+		UpdateWindow(_hwnd);
 		return (0);
 	}
 	break;
@@ -173,6 +227,8 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 		s_iMouseX = static_cast<int>(LOWORD(_lparam));
 		s_iMouseY = static_cast<int>(HIWORD(_lparam));
 		int iButtons = static_cast<int>(_wparam); 
+		pmouse.x = s_iMouseX;
+		pmouse.y = s_iMouseY;
 		
 
 			// Test if left button is down... 
@@ -191,7 +247,7 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 				// Do something...
 			}
 			
-			UpdateWindow(_hwnd);
+			//UpdateWindow(_hwnd);
 	}
 	break;
 
@@ -223,25 +279,44 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 			//Shape Menu
 			case ID_SHAPE_LINE:
 			{
-				
+				CheckMenuItem(g_hMenu, ID_SHAPE_LINE, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_SHAPE_R, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_SHAPE_ELLIPSE, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_SHAPE_POLYGON, MF_UNCHECKED);
 				s_currentShape = LINESHAPE;
 				break;
 			}
 
 			case ID_SHAPE_R:
 			{
+				
+				CheckMenuItem(g_hMenu, ID_SHAPE_R, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_SHAPE_LINE, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_SHAPE_ELLIPSE, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_SHAPE_POLYGON, MF_UNCHECKED);
 				s_currentShape = RECTANGLESHAPE;
 				break;
 			}
 
 			case ID_SHAPE_ELLIPSE:
 			{
+				
+				CheckMenuItem(g_hMenu, ID_SHAPE_ELLIPSE, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_SHAPE_LINE, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_SHAPE_R, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_SHAPE_POLYGON, MF_UNCHECKED);
 				s_currentShape = ELLIPSESHAPE;
 				break;
 			}
 
 			case ID_SHAPE_POLYGON:
 			{
+				g_pShape = NULL;
+				ppointer = NULL;
+				CheckMenuItem(g_hMenu, ID_SHAPE_POLYGON, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_SHAPE_LINE, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_SHAPE_R, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_SHAPE_ELLIPSE, MF_UNCHECKED);
 				s_currentShape = POLYGONSHAPE;
 				break;
 			}
@@ -249,12 +324,19 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 			//Pen menu
 			case ID_WIDTH_THIN:
 			{
+				CheckMenuItem(g_hMenu, ID_WIDTH_THIN, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_WIDTH_MEDIUM, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_WIDTH_THICK, MF_UNCHECKED);
+				
 				s_lineWidth = 1;
 				break;
 			}
 
 			case ID_WIDTH_MEDIUM:
 			{
+				CheckMenuItem(g_hMenu, ID_WIDTH_MEDIUM, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_WIDTH_THIN, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_WIDTH_THICK, MF_UNCHECKED);
 				s_lineWidth = 5;
 				break;
 			}
@@ -262,99 +344,228 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 
 			case ID_WIDTH_THICK:
 			{
+				CheckMenuItem(g_hMenu, ID_WIDTH_THICK, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_WIDTH_THIN, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_WIDTH_MEDIUM, MF_UNCHECKED);
 				s_lineWidth = 10;
 				break;
 			}
 
 			//Pen Colours
+			
+			case ID_COLOR_BLACK:
+			{
+				CheckMenuItem(g_hMenu, ID_COLOR_BLACK, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_BLUE, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_GREEN, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_YELLOW, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_CUSTOM, MF_UNCHECKED);
+				s_lineColour = RGB(0, 0, 0);
+				break;
+			}
 			case ID_COLOR_RED:
 			{
+				CheckMenuItem(g_hMenu, ID_COLOR_RED, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_BLACK, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_BLUE, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_GREEN, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_YELLOW, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_CUSTOM, MF_UNCHECKED);
 				s_lineColour = RGB(255,0,0);
 				break;
 			}
 
 			case ID_COLOR_BLUE:
 			{
+				CheckMenuItem(g_hMenu, ID_COLOR_BLUE, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_BLACK, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_RED, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_GREEN, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_YELLOW, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_CUSTOM, MF_UNCHECKED);
 				s_lineColour = RGB(0, 0, 255);
 				break;
 			}
 			case ID_COLOR_GREEN:
 			{
+				CheckMenuItem(g_hMenu, ID_COLOR_GREEN, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_BLACK, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_RED, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_BLUE, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_YELLOW, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_CUSTOM, MF_UNCHECKED);
 				s_lineColour = RGB(0, 127, 0);
 				break;
 			}
 			case ID_COLOR_YELLOW:
 			{
+				CheckMenuItem(g_hMenu, ID_COLOR_YELLOW, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_BLACK, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_RED, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_GREEN, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_BLUE, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_CUSTOM, MF_UNCHECKED);
 				s_lineColour = RGB(255, 255, 0);
 				break;
 			}
 			case ID_COLOR_CUSTOM:
 			{
+				CheckMenuItem(g_hMenu, ID_COLOR_CUSTOM, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_BLACK, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_RED, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_GREEN, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_YELLOW, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_BLUE, MF_UNCHECKED);
 
+				static COLORREF arrayCustomColors[16];
+				ZeroMemory(&cc, sizeof(CHOOSECOLOR));
+
+				cc.lStructSize = sizeof(CHOOSECOLOR);
+				cc.hwndOwner = _hwnd;
+				cc.lpCustColors = (LPDWORD)arrayCustomColors;
+				cc.rgbResult = s_lineColour;
+				cc.Flags = CC_RGBINIT;
+
+				if (ChooseColor(&cc) == TRUE)
+				{
+					s_lineColour = cc.rgbResult;
+				}
 				break;
 			}
 
 			case ID_STYLE_SOLID:
 			{
+				CheckMenuItem(g_hMenu, ID_STYLE_SOLID, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_STYLE_STIPED, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_STYLE_CROSSHATCH, MF_UNCHECKED);
 				s_lineStyle = PS_SOLID;
 				break;
 			}
 
 			case ID_STYLE_STIPED:
 			{
+				CheckMenuItem(g_hMenu, ID_STYLE_STIPED, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_STYLE_SOLID, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_STYLE_CROSSHATCH, MF_UNCHECKED);
 				s_lineStyle = PS_DASH;
 				break;
 			}
 
 			case ID_STYLE_CROSSHATCH:
 			{
+				CheckMenuItem(g_hMenu, ID_STYLE_CROSSHATCH, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_STYLE_SOLID, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_STYLE_STIPED, MF_UNCHECKED);
 				s_lineStyle = PS_DASHDOT;
 				break;
 			}
 
 			//Brush colours
-		
+			
+			case ID_COLOR_WHITE:
+			{
+				CheckMenuItem(g_hMenu, ID_COLOR_WHITE, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_RED40025, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_BLUE40026, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_GREEN40027, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_YELLOW40028, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_CUSTOM40029, MF_UNCHECKED);
+				s_fillColour = RGB(255, 255, 255);
+				break;
+			}
 			case ID_COLOR_RED40025:
 			{
+				CheckMenuItem(g_hMenu, ID_COLOR_RED40025, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_WHITE, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_BLUE40026, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_GREEN40027, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_YELLOW40028, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_CUSTOM40029, MF_UNCHECKED);
 				s_fillColour = RGB(255, 0, 0);
 				break;
 			}
 
 			case ID_COLOR_BLUE40026:
 			{
+				CheckMenuItem(g_hMenu, ID_COLOR_BLUE40026, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_WHITE, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_RED40025, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_GREEN40027, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_YELLOW40028, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_CUSTOM40029, MF_UNCHECKED);
 				s_fillColour = RGB(0, 0, 255);
 				break;
 			}
 			case ID_COLOR_GREEN40027:
 			{
+				CheckMenuItem(g_hMenu, ID_COLOR_GREEN40027, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_WHITE, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_RED40025, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_BLUE40026, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_YELLOW40028, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_CUSTOM40029, MF_UNCHECKED);
 				s_fillColour = RGB(0, 127, 0);
 				break;
 			}
 			case ID_COLOR_YELLOW40028:
 			{
+				CheckMenuItem(g_hMenu, ID_COLOR_YELLOW40028, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_WHITE, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_RED40025, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_BLUE40026, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_GREEN40027, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_CUSTOM40029, MF_UNCHECKED);
 				s_fillColour = RGB(255, 255, 0);
 				break;
 			}
 			case ID_COLOR_CUSTOM40029:
 			{
+				CheckMenuItem(g_hMenu, ID_COLOR_CUSTOM40029, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_WHITE, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_RED40025, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_BLUE40026, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_GREEN40027, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_COLOR_YELLOW40028, MF_UNCHECKED);
 
+				static COLORREF arrayCustomColors[16];
+				ZeroMemory(&cc, sizeof(CHOOSECOLOR));
+
+				cc.lStructSize = sizeof(CHOOSECOLOR);
+				cc.hwndOwner = _hwnd;
+				cc.lpCustColors = (LPDWORD)arrayCustomColors;
+				cc.rgbResult = s_fillColour;
+				cc.Flags = CC_RGBINIT;
+
+				if (ChooseColor(&cc) == TRUE)
+				{
+					s_fillColour = cc.rgbResult;
+				}
 				break;
 			}
 			//Brush Style
 			case ID_STYLE_SOLID40036:
 			{
+				CheckMenuItem(g_hMenu, ID_STYLE_SOLID40036, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_STYLE_DASH, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_STYLE_EMPTY, MF_UNCHECKED);
 				s_brushStyle = SOLID;
 				break;
 			}
 
 			case ID_STYLE_DASH:
 			{
+				CheckMenuItem(g_hMenu, ID_STYLE_DASH, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_STYLE_SOLID40036, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_STYLE_EMPTY, MF_UNCHECKED);
 				s_brushStyle = HATCH;
 				break;
 			}
 
-			case 40039:
+			case ID_STYLE_EMPTY:
 			{
+				CheckMenuItem(g_hMenu, ID_STYLE_EMPTY, MF_CHECKED);
+				CheckMenuItem(g_hMenu, ID_STYLE_SOLID40036, MF_UNCHECKED);
+				CheckMenuItem(g_hMenu, ID_STYLE_DASH, MF_UNCHECKED);
 				s_brushStyle = NOSTYLE;
 				break;
 			}
@@ -362,13 +573,13 @@ LRESULT CALLBACK WindowProc(HWND _hwnd,
 			//Stamp Menu
 			case ID_ADD_STAMP:
 			{
-
+				s_currentShape = STAMP;
 				break;
 			}
 
 			case ID_HELP_ABOUT:
 			{
-				MessageBox(_hwnd, L"This paint tool was developed by .............", L"Author Information", MB_OK | MB_ICONINFORMATION);
+				MessageBox(_hwnd, L"This paint tool was developed by Alexander Jenkins", L"Author Information", MB_OK | MB_ICONINFORMATION);
 				break;
 			}
 			default:

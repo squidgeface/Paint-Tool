@@ -22,7 +22,7 @@ class CStamp : public IShape
 {
 public:
 	CStamp();
-	CStamp(HINSTANCE hInstance, wchar_t* filename, int, int );
+	CStamp(HINSTANCE _hInstance, int _ID);
 	virtual ~CStamp();
 
 	virtual void Draw(HDC _hdc);
@@ -32,6 +32,8 @@ public:
 private:
 	HBITMAP m_hBitMap;
 	BITMAP m_bitmapStructure;
+	HINSTANCE hInstance;
+	HBRUSH myBrush;
 };
 
 #endif
